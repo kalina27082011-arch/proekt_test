@@ -26,7 +26,7 @@
       border-radius: 16px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
       padding: 48px;
-      max-width: 520px;
+      max-width: 560px;
       width: 100%;
     }
 
@@ -42,36 +42,262 @@
       list-style: none;
     }
 
-    li {
+    .menu-item {
       padding: 16px 20px;
       margin-bottom: 12px;
       background: #f8f9ff;
       border-radius: 10px;
+      border: 2px solid transparent;
       border-left: 4px solid #667eea;
       font-size: 1.05rem;
       color: #333;
-      transition: transform 0.2s, box-shadow 0.2s;
-      cursor: default;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      cursor: pointer;
+      user-select: none;
     }
 
-    li:last-child {
+    .menu-item:last-child {
       margin-bottom: 0;
     }
 
-    li:hover {
+    .menu-item:hover {
       transform: translateX(4px);
       box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    }
+
+    .menu-item.active {
+      border-color: #667eea;
+      background: #eef0ff;
+    }
+
+    .results {
+      margin-top: 28px;
+      padding-top: 28px;
+      border-top: 1px solid #e8eaf6;
+      display: none;
+    }
+
+    .results.visible {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .results-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+
+    .btn-regenerate {
+      padding: 8px 14px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      color: #667eea;
+      background: #f8f9ff;
+      border: 1px solid #667eea;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .btn-regenerate:hover {
+      background: #667eea;
+      color: #fff;
+    }
+
+    .ideas-list {
+      list-style: none;
+    }
+
+    .ideas-list li {
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      background: #f8f9ff;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: #444;
+      line-height: 1.5;
+    }
+
+    .ideas-list li:last-child {
+      margin-bottom: 0;
+    }
+
+    .ideas-list .day-label {
+      font-weight: 600;
+      color: #667eea;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .hint {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #888;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Генератор идей для постов</h1>
-    <ul>
-      <li>5 идей постов для экспертов</li>
-      <li>3 идеи сторис на сегодня</li>
-      <li>Контент план на неделю</li>
+    <ul id="menu">
+      <li class="menu-item" data-type="posts">5 идей постов для экспертов</li>
+      <li class="menu-item" data-type="stories">3 идеи сторис на сегодня</li>
+      <li class="menu-item" data-type="plan">Контент план на неделю</li>
     </ul>
+    <p class="hint" id="hint">Нажмите на пункт, чтобы сгенерировать идеи</p>
+
+    <div class="results" id="results">
+      <div class="results-header">
+        <h2 class="results-title" id="resultsTitle"></h2>
+        <button class="btn-regenerate" id="btnRegenerate">Ещё раз</button>
+      </div>
+      <ul class="ideas-list" id="ideasList"></ul>
+    </div>
   </div>
+
+  <script>
+    const expertPosts = [
+      "Разбор типичной ошибки в вашей нише — и как её избежать",
+      "5 инструментов, без которых вы не обойдётесь в работе",
+      "Миф vs реальность: что клиенты думают о вашей профессии",
+      "Кейс: как вы решили сложную задачу за короткий срок",
+      "Чек-лист для новичков в вашей области",
+      "Тренды в индустрии на этот год — что стоит внедрить",
+      "Ответы на 3 самых частых вопроса от подписчиков",
+      "До и после: результат работы с клиентом",
+      "Как я пришёл в профессию — личная история",
+      "3 книги/курса, которые изменили ваш подход к работе",
+      "Сравнение двух популярных методов в вашей сфере",
+      "Ошибка, которая стоила вам времени — и урок из неё",
+      "Пошаговый гайд: как начать с нуля в вашей теме",
+      "Что я перестал делать — и почему это улучшило результат",
+      "Экспертное мнение о спорном вопросе в нише"
+    ];
+
+    const storyIdeas = [
+      "Опрос: «Что вам сложнее всего в …?» с 2–3 вариантами ответа",
+      "Закулисье рабочего процесса — короткое видео или фото",
+      "«День из жизни» — 3–5 кадров с подписью к каждому",
+      "Быстрый совет за 15 секунд — один полезный лайфхак",
+      "Вопрос дня: «Согласны или нет?» с провокационным утверждением",
+      "До/после в сторис — swipe-формат",
+      "Репост отзыва клиента с благодарностью",
+      "«3 факта обо мне, о которых вы не знали»",
+      "Анонс нового поста или продукта с интригой",
+      "Мини-урок: один термин или понятие простыми словами",
+      "Стикер «Задай вопрос» — ответы в следующих сторис",
+      "Таймер обратного отсчёта до события или запуска"
+    ];
+
+    const weekDays = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"];
+
+    const contentTypes = [
+      "Экспертный пост с советом",
+      "Кейс или история клиента",
+      "Короткий лайфхак в карусели",
+      "Опрос или вовлекающий вопрос",
+      "Разбор ошибки в нише",
+      "Личная история из практики",
+      "Подборка инструментов или ресурсов",
+      "Ответы на частые вопросы",
+      "Тренд или новость в индустрии",
+      "Мотивационный пост с выводом",
+      "Обучающий Reels / короткое видео",
+      "Отзыв или результат работы"
+    ];
+
+    const titles = {
+      posts: "5 идей постов для экспертов",
+      stories: "3 идеи сторис на сегодня",
+      plan: "Контент план на неделю"
+    };
+
+    let currentType = null;
+
+    function pickRandom(arr, count) {
+      const shuffled = [...arr].sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, count);
+    }
+
+    function generatePosts() {
+      return pickRandom(expertPosts, 5);
+    }
+
+    function generateStories() {
+      return pickRandom(storyIdeas, 3);
+    }
+
+    function generatePlan() {
+      return weekDays.map((day) => ({
+        day,
+        idea: pickRandom(contentTypes, 1)[0]
+      }));
+    }
+
+    function renderIdeas(type) {
+      const list = document.getElementById("ideasList");
+      list.innerHTML = "";
+
+      if (type === "posts") {
+        generatePosts().forEach((idea, i) => {
+          const li = document.createElement("li");
+          li.textContent = `${i + 1}. ${idea}`;
+          list.appendChild(li);
+        });
+      } else if (type === "stories") {
+        generateStories().forEach((idea, i) => {
+          const li = document.createElement("li");
+          li.textContent = `${i + 1}. ${idea}`;
+          list.appendChild(li);
+        });
+      } else if (type === "plan") {
+        generatePlan().forEach(({ day, idea }) => {
+          const li = document.createElement("li");
+          li.innerHTML = `<span class="day-label">${day}</span>${idea}`;
+          list.appendChild(li);
+        });
+      }
+
+      document.getElementById("resultsTitle").textContent = titles[type];
+      document.getElementById("results").classList.add("visible");
+      document.getElementById("hint").style.display = "none";
+    }
+
+    function setActive(type) {
+      document.querySelectorAll(".menu-item").forEach((item) => {
+        item.classList.toggle("active", item.dataset.type === type);
+      });
+    }
+
+    document.querySelectorAll(".menu-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        currentType = item.dataset.type;
+        setActive(currentType);
+        renderIdeas(currentType);
+      });
+    });
+
+    document.getElementById("btnRegenerate").addEventListener("click", () => {
+      if (currentType) {
+        renderIdeas(currentType);
+      }
+    });
+  </script>
 </body>
 </html>
